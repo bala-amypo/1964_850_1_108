@@ -14,7 +14,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // REQUIRED constructor signature (as per test case)
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -23,7 +22,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User save(User user) {
-        // Hash password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
