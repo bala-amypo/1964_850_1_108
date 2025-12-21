@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface EventRecordRepository extends JpaRepository<EventRecord, Long> {
 
-    boolean existsByEventCode(String code);
+    boolean existsByEventCode(String eventCode);
 
-    Optional<EventRecord> findByEventCode(String code);
+    Optional<EventRecord> findByEventCode(String eventCode);
 }
