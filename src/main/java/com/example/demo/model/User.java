@@ -22,7 +22,7 @@ public class User {
 
     public User(Long id, String fullName, String email,
                 String password, String role) {
-        this.id = id;
+        // this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.password = password;
