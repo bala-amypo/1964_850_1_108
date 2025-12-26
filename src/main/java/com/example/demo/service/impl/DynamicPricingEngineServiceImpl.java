@@ -79,7 +79,11 @@ public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineServ
         // 7. Calculate final price
         double computedPrice = event.getBasePrice() * highestMultiplier;
         
-        // 8. Create and save price record
+        // 8. Get previous price BEFORE saving new one
+        Optional<DynamicPriceRecord> previousPriceOpt = 
+            dynamicPriceRecordRepository.findFirstByEventIdOrderByComputedAtDesc(eventId);
+        
+        // 9. Create and save price record
         DynamicPriceRecord priceRecord = new DynamicPriceRecord();
         priceRecord.setEventId(eventId);
         priceRecord.setComputedPrice(computedPrice);
@@ -87,23 +91,16 @@ public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineServ
         
         priceRecord = dynamicPriceRecordRepository.save(priceRecord);
         
-        // 9. Get previous price and log adjustment if price changed
-        Optional<DynamicPriceRecord> previousPriceOpt = 
-            dynamicPriceRecordRepository.findFirstByEventIdOrderByComputedAtDesc(eventId);
-        
+        // 10. Log adjustment if price changed
         if (previousPriceOpt.isPresent()) {
-            DynamicPriceRecord previousPrice = previousPriceOpt.get();
-            // Make sure we're not comparing with the record we just saved
-            if (!previousPrice.getId().equals(priceRecord.getId())) {
-                double oldPrice = previousPrice.getComputedPrice();
-                if (Math.abs(oldPrice - computedPrice) > 0.01) {
-                    PriceAdjustmentLog log = new PriceAdjustmentLog();
-                    log.setEventId(eventId);
-                    log.setOldPrice(oldPrice);
-                    log.setNewPrice(computedPrice);
-                    log.setReason("Dynamic pricing rules applied");
-                    priceAdjustmentLogRepository.save(log);
-                }
+            double oldPrice = previousPriceOpt.get().getComputedPrice();
+            if (Math.abs(oldPrice - computedPrice) > 0.01) {
+                PriceAdjustmentLog log = new PriceAdjustmentLog();
+                log.setEventId(eventId);
+                log.setOldPrice(oldPrice);
+                log.setNewPrice(computedPrice);
+                log.setReason("Dynamic pricing rules applied");
+                priceAdjustmentLogRepository.save(log);
             }
         }
         

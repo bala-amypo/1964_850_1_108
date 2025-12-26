@@ -8,7 +8,6 @@ import com.example.demo.service.PricingRuleService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PricingRuleServiceImpl implements PricingRuleService {
@@ -21,30 +20,18 @@ public class PricingRuleServiceImpl implements PricingRuleService {
     
     @Override
     public PricingRule createRule(PricingRule rule) {
-        if (pricingRuleRepository.existsByRuleCode(rule.getRuleCode())) {
-            throw new BadRequestException("Rule code already exists");
-        }
-        
         if (rule.getPriceMultiplier() == null || rule.getPriceMultiplier() <= 0) {
             throw new BadRequestException("Price multiplier must be > 0");
         }
-        
+        if (pricingRuleRepository.existsByRuleCode(rule.getRuleCode())) {
+            throw new BadRequestException("Rule code already exists");
+        }
         return pricingRuleRepository.save(rule);
     }
     
     @Override
-    public PricingRule updateRule(Long id, PricingRule updatedRule) {
-        PricingRule rule = pricingRuleRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Rule not found"));
-        
-        rule.setDescription(updatedRule.getDescription());
-        rule.setMinRemainingSeats(updatedRule.getMinRemainingSeats());
-        rule.setMaxRemainingSeats(updatedRule.getMaxRemainingSeats());
-        rule.setDaysBeforeEvent(updatedRule.getDaysBeforeEvent());
-        rule.setPriceMultiplier(updatedRule.getPriceMultiplier());
-        rule.setActive(updatedRule.getActive());
-        
-        return pricingRuleRepository.save(rule);
+    public List<PricingRule> getAllRules() {
+        return pricingRuleRepository.findAll();
     }
     
     @Override
@@ -53,14 +40,10 @@ public class PricingRuleServiceImpl implements PricingRuleService {
     }
     
     @Override
-    public Optional<PricingRule> getRuleByCode(String ruleCode) {
-        return pricingRuleRepository.findAll().stream()
-            .filter(rule -> rule.getRuleCode().equals(ruleCode))
-            .findFirst();
-    }
-    
-    @Override
-    public List<PricingRule> getAllRules() {
-        return pricingRuleRepository.findAll();
+    public PricingRule updateRuleStatus(Long id, Boolean active) {
+        PricingRule rule = pricingRuleRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Rule not found"));
+        rule.setActive(active);
+        return pricingRuleRepository.save(rule);
     }
 }
