@@ -17,16 +17,11 @@ public class JwtTokenProvider {
     private final SecretKey secretKey;
     private final long validityInMilliseconds;
     
-    // Constructor for Spring application (uses @Value from properties)
+    // Single constructor with 3 parameters (works for both tests and Spring)
     public JwtTokenProvider(
             @Value("${jwt.secret:VerySecretKeyForJwtDemoApplication123456789012345678901234567890}") String jwtSecret,
-            @Value("${jwt.expiration:3600000}") Long jwtExpirationMs) {
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        this.validityInMilliseconds = jwtExpirationMs;
-    }
-    
-    // Constructor for tests (3 parameters)
-    public JwtTokenProvider(String jwtSecret, Long jwtExpirationMs, Boolean useSecureKey) {
+            @Value("${jwt.expiration:3600000}") Long jwtExpirationMs,
+            @Value("${jwt.useSecureKey:true}") Boolean useSecureKey) {
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.validityInMilliseconds = jwtExpirationMs;
     }
