@@ -42,4 +42,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         
         return userData;
     }
+    
+    // ✅ This method must be present
+    public Map<String, Object> getUserData(String email) {
+        return users.get(email);
+    }
 }
