@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineService {
@@ -37,21 +36,27 @@ public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineServ
     
     @Override
     public DynamicPriceRecord computeDynamicPrice(Long eventId) {
+        // 1. Fetch event
         EventRecord event = eventRecordRepository.findById(eventId)
             .orElseThrow(() -> new NotFoundException("Event not found"));
         
+        // 2. Check if event is active
         if (!event.getActive()) {
             throw new BadRequestException("Event is not active");
         }
         
+        // 3. Fetch seat inventory
         SeatInventoryRecord inventory = seatInventoryRecordRepository.findByEventId(eventId)
             .orElseThrow(() -> new NotFoundException("Seat inventory not found"));
         
+        // 4. Fetch active pricing rules
         List<PricingRule> activeRules = pricingRuleRepository.findByActiveTrue();
         
+        // 5. Calculate days until event
         long daysUntilEvent = ChronoUnit.DAYS.between(LocalDate.now(), event.getEventDate());
         int remainingSeats = inventory.getRemainingSeats();
         
+        // 6. Find highest multiplier from matching rules
         double highestMultiplier = 1.0;
         StringBuilder appliedRules = new StringBuilder();
         
@@ -71,8 +76,10 @@ public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineServ
             }
         }
         
+        // 7. Calculate final price
         double computedPrice = event.getBasePrice() * highestMultiplier;
         
+        // 8. Create and save price record
         DynamicPriceRecord priceRecord = new DynamicPriceRecord();
         priceRecord.setEventId(eventId);
         priceRecord.setComputedPrice(computedPrice);
@@ -80,18 +87,23 @@ public class DynamicPricingEngineServiceImpl implements DynamicPricingEngineServ
         
         priceRecord = dynamicPriceRecordRepository.save(priceRecord);
         
-        Optional<DynamicPriceRecord> previousPrice = 
+        // 9. Get previous price and log adjustment if price changed
+        Optional<DynamicPriceRecord> previousPriceOpt = 
             dynamicPriceRecordRepository.findFirstByEventIdOrderByComputedAtDesc(eventId);
         
-        if (previousPrice.isPresent() && !previousPrice.get().getId().equals(priceRecord.getId())) {
-            double oldPrice = previousPrice.get().getComputedPrice();
-            if (Math.abs(oldPrice - computedPrice) > 0.01) {
-                PriceAdjustmentLog log = new PriceAdjustmentLog();
-                log.setEventId(eventId);
-                log.setOldPrice(oldPrice);
-                log.setNewPrice(computedPrice);
-                log.setReason("Dynamic pricing rules applied");
-                priceAdjustmentLogRepository.save(log);
+        if (previousPriceOpt.isPresent()) {
+            DynamicPriceRecord previousPrice = previousPriceOpt.get();
+            // Make sure we're not comparing with the record we just saved
+            if (!previousPrice.getId().equals(priceRecord.getId())) {
+                double oldPrice = previousPrice.getComputedPrice();
+                if (Math.abs(oldPrice - computedPrice) > 0.01) {
+                    PriceAdjustmentLog log = new PriceAdjustmentLog();
+                    log.setEventId(eventId);
+                    log.setOldPrice(oldPrice);
+                    log.setNewPrice(computedPrice);
+                    log.setReason("Dynamic pricing rules applied");
+                    priceAdjustmentLogRepository.save(log);
+                }
             }
         }
         
