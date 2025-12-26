@@ -3,7 +3,6 @@ package com.example.demo.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -18,7 +17,7 @@ public class JwtTokenProvider {
     private final SecretKey secretKey;
     private final long validityInMilliseconds;
     
-    // Primary constructor for Spring - uses @Value from application.properties
+    // Constructor for Spring application (uses @Value from properties)
     public JwtTokenProvider(
             @Value("${jwt.secret:VerySecretKeyForJwtDemoApplication123456789012345678901234567890}") String jwtSecret,
             @Value("${jwt.expiration:3600000}") Long jwtExpirationMs) {
@@ -26,13 +25,13 @@ public class JwtTokenProvider {
         this.validityInMilliseconds = jwtExpirationMs;
     }
     
-    // Constructor for tests only (with 3 parameters)
+    // Constructor for tests (3 parameters)
     public JwtTokenProvider(String jwtSecret, Long jwtExpirationMs, Boolean useSecureKey) {
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.validityInMilliseconds = jwtExpirationMs;
     }
     
-    public String generateToken(Authentication authentication, Long userId, String role) {
+    public String generateToken(org.springframework.security.core.Authentication authentication, Long userId, String role) {
         String username = authentication.getName();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + validityInMilliseconds);
