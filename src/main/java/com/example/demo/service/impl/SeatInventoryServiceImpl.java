@@ -22,9 +22,10 @@ public class SeatInventoryServiceImpl implements SeatInventoryService {
     
     @Override
     public SeatInventoryRecord createInventory(SeatInventoryRecord inventory) {
-        if (!eventRecordRepository.existsById(inventory.getEventId())) {
-            throw new NotFoundException("Event not found");
-        }
+        // CHANGED: Use findById instead of existsById to match test expectations
+        eventRecordRepository.findById(inventory.getEventId())
+            .orElseThrow(() -> new NotFoundException("Event not found"));
+        
         if (inventory.getRemainingSeats() > inventory.getTotalSeats()) {
             throw new BadRequestException("Remaining seats cannot exceed total seats");
         }
