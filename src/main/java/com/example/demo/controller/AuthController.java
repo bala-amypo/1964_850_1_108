@@ -17,6 +17,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "*", maxAge = 3600)  // Add this line
+@Tag(name = "Authentication", description = "Authentication APIs")
+public class AuthController {
+    // ... rest of the code
+}
+
+
+@RestController
+@RequestMapping("/auth")
 @Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
     
