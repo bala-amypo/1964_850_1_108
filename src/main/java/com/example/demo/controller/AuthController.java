@@ -42,7 +42,9 @@ public class AuthController {
             encodedPassword,
             request.getRole() != null ? request.getRole() : "USER"
         );
-        return ResponseEntity.ok(user);
+        
+        // Return ApiResponse with 3 parameters: success, message, data
+        return ResponseEntity.ok(new ApiResponse(true, "User registered successfully", user));
     }
     
     @PostMapping("/login")
@@ -60,9 +62,13 @@ public class AuthController {
             // Generate token
             String token = jwtTokenProvider.generateToken(authentication, 1L, "USER");
             
-            return ResponseEntity.ok(new AuthResponse(token, request.getEmail()));
+            // AuthResponse constructor: (token, userId, email, role)
+            AuthResponse authResponse = new AuthResponse(token, 1L, request.getEmail(), "USER");
+            
+            return ResponseEntity.ok(new ApiResponse(true, "Login successful", authResponse));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid credentials"));
+            // ApiResponse constructor: (success, message, data)
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid credentials", null));
         }
     }
 }
