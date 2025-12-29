@@ -17,15 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*", maxAge = 3600)  // Add this line
-@Tag(name = "Authentication", description = "Authentication APIs")
-public class AuthController {
-    // ... rest of the code
-}
-
-
-@RestController
-@RequestMapping("/auth")
+@CrossOrigin(origins = "*", maxAge = 3600)
 @Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
     
@@ -52,7 +44,6 @@ public class AuthController {
             request.getRole() != null ? request.getRole() : "USER"
         );
         
-        // Return ApiResponse with 3 parameters: success, message, data
         return ResponseEntity.ok(new ApiResponse(true, "User registered successfully", user));
     }
     
@@ -65,18 +56,14 @@ public class AuthController {
                 request.getPassword()
             );
             
-            // Verify user exists
             customUserDetailsService.loadUserByUsername(request.getEmail());
             
-            // Generate token
             String token = jwtTokenProvider.generateToken(authentication, 1L, "USER");
             
-            // AuthResponse constructor: (token, userId, email, role)
             AuthResponse authResponse = new AuthResponse(token, 1L, request.getEmail(), "USER");
             
             return ResponseEntity.ok(new ApiResponse(true, "Login successful", authResponse));
         } catch (Exception e) {
-            // ApiResponse constructor: (success, message, data)
             return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid credentials", null));
         }
     }
