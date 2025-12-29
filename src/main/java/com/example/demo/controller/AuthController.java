@@ -1,7 +1,13 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.AuthRequest;
+import com.example.demo.dto.AuthResponse;
+import com.example.demo.dto.ApiResponse;
 import com.example.demo.security.CustomUserDetailsService;
 import com.example.demo.security.JwtTokenProvider;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -10,48 +16,53 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
+@Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
     
     private final CustomUserDetailsService customUserDetailsService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
     
     public AuthController(CustomUserDetailsService customUserDetailsService,
-                         JwtTokenProvider jwtTokenProvider,
-                         BCryptPasswordEncoder passwordEncoder) {
+                         BCryptPasswordEncoder passwordEncoder,
+                         JwtTokenProvider jwtTokenProvider) {
         this.customUserDetailsService = customUserDetailsService;
-        this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
     
     @PostMapping("/register")
-    public Map<String, Object> register(@RequestBody Map<String, String> request) {
-        String name = request.get("name");
-        String email = request.get("email");
-        String password = request.get("password");
-        String role = request.get("role");
-        
-        String encodedPassword = passwordEncoder.encode(password);
-        return customUserDetailsService.registerUser(name, email, encodedPassword, role);
+    @Operation(summary = "Register a new user", description = "Creates a new user account")
+    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        Map<String, Object> user = customUserDetailsService.registerUser(
+            request.getName() != null ? request.getName() : "User",
+            request.getEmail(),
+            encodedPassword,
+            request.getRole() != null ? request.getRole() : "USER"
+        );
+        return ResponseEntity.ok(user);
     }
     
     @PostMapping("/login")
-    public Map<String, String> login(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String password = request.get("password");
-        
-        Authentication authentication = new UsernamePasswordAuthenticationToken(email, password);
-        
-        // In real implementation, you'd verify password here
-        Map<String, Object> userData = Map.of("userId", 1L, "role", "ADMIN");
-        
-        String token = jwtTokenProvider.generateToken(authentication, 1L, "ADMIN");
-        
-        return Map.of("token", token, "email", email);
-    }
-    
-    public String getUserData(String email) {
-        return email;
+    @Operation(summary = "User login", description = "Authenticates user and returns JWT token")
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        try {
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword()
+            );
+            
+            // Verify user exists
+            customUserDetailsService.loadUserByUsername(request.getEmail());
+            
+            // Generate token
+            String token = jwtTokenProvider.generateToken(authentication, 1L, "USER");
+            
+            return ResponseEntity.ok(new AuthResponse(token, request.getEmail()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid credentials"));
+        }
     }
 }
